@@ -87,9 +87,13 @@ function create() {
         fontFamily: 'Droid Sans Mono',
     };
     
-    const {socket, terminal} = gritty(document.body, options);
-    
+
+//    const {socket, terminal} = gritty(document.body, options);
+    var {socket, terminal} = gritty(document.body, options); // make sure to open new each time
+
     Terminal = terminal;
+    
+    socket.on('exit', hide); // ulno: hint from coderaiser for closing all the time // TODO: kill menu too?
     
     terminal.on('key', (char, {keyCode, shiftKey}) => {
         if (shiftKey && keyCode === Key.ESC) {
