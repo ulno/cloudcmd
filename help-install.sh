@@ -1,3 +1,6 @@
+npm i gritty
+npm i rimraf
+npm i madrun
 #npm install webpack
 #npm install webpack-cli
 #npm install webpack-cli
