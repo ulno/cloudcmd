@@ -19,7 +19,7 @@ const TITLE = 'Terminal';
 const {Dialog} = DOM;
 const {
     Key,
-    config
+    config,
 } = CloudCmd;
 
 CloudCmd.Terminal = exports;
@@ -125,7 +125,7 @@ function show(callback) {
                 Terminal.focus();
             
             exec(callback);
-        }
+        },
     });
 }
 
