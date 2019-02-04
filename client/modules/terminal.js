@@ -98,6 +98,7 @@ function create() {
     });
     
     socket.on('connect', exec.with(authCheck, socket));
+    socket.on('exit', hide);
 }
 
 function authCheck(spawn) {
