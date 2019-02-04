@@ -52,7 +52,6 @@ module.exports.init = async () => {
     
     await CloudCmd.View();
     await loadAll();
-    await create();
 };
 
 module.exports.show = show;
@@ -87,13 +86,10 @@ function create() {
         fontFamily: 'Droid Sans Mono',
     };
     
-
-//    const {socket, terminal} = gritty(document.body, options);
-    var {socket, terminal} = gritty(document.body, options); // make sure to open new each time
-
-    Terminal = terminal;
+    delete window.IntersectionObserver;
+    const {socket, terminal} = gritty(document.body, options);
     
-    socket.on('exit', hide); // ulno: hint from coderaiser for closing all the time // TODO: kill menu too?
+    Terminal = terminal;
     
     terminal.on('key', (char, {keyCode, shiftKey}) => {
         if (shiftKey && keyCode === Key.ESC) {
@@ -118,6 +114,8 @@ function show(callback) {
     
     if (!config('terminal'))
         return;
+
+    create();
     
     CloudCmd.View.show(Terminal.element, {
         afterShow: () => {
