@@ -94,11 +94,12 @@ function create() {
     terminal.on('key', (char, {keyCode, shiftKey}) => {
         if (shiftKey && keyCode === Key.ESC) {
             hide();
+            CloudCmd.refresh();
         }
     });
     
     socket.on('connect', exec.with(authCheck, socket));
-    socket.on('exit', hide);
+    socket.on('exit', function() { hide(); CloudCmd.refresh(); });
 }
 
 function authCheck(spawn) {
