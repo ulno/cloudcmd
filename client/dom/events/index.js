@@ -47,8 +47,8 @@ function EventsProto() {
             isFunc = itype.function(element);
             
             if (isFunc) {
-                listener   = element;
-                element    = null;
+                listener = element;
+                element = null;
             }
             
             if (!element)
@@ -83,7 +83,7 @@ function EventsProto() {
                     callback
                 );
             });
-           
+            
             break;
         }
     }
@@ -122,8 +122,8 @@ function EventsProto() {
         };
         
         if (!listener) {
-            listener    = element;
-            element     = null;
+            listener = element;
+            element = null;
         }
         
         this.add(type, element, once);
@@ -142,7 +142,7 @@ function EventsProto() {
         checkType(type);
         
         parseArgs(type, element, listener, (element, args) => {
-            element.removeEventListener.apply(element, args);
+            element.removeEventListener(...args);
         });
         
         return Events;
