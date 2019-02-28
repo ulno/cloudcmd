@@ -21,8 +21,15 @@ let Loading = true;
 let Element;
 let editor;
 
+let InfoElement;
+
 const ConfigView = {
+    beforeClose: () => {
+        document.body.removeChild(InfoElement);
+    },
     afterShow: () => {
+        document.body.appendChild(InfoElement);
+        
         editor
             .moveCursorTo(0, 0)
             .focus();
