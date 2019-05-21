@@ -24,8 +24,7 @@ const {
 } = DOM;
 
 const Info = DOM.CurrentInfo;
-const TITLE = 'Cloud Commander';
-const alertNoFiles = wrap(Dialog.alert.noFiles)(TITLE);
+const alertNoFiles = Dialog.alert.noFiles;
 const uploadTo = wrap(_uploadTo);
 
 let MenuShowedName;
@@ -233,9 +232,8 @@ function _uploadTo(nameModule) {
             return;
         
         const {name} = Info;
-        const execFrom = CloudCmd.execFromModule;
         
-        execFrom(nameModule, 'uploadFile', name, data);
+        CloudCmd.execFromModule(nameModule, 'uploadFile', name, data);
     });
     
     CloudCmd.log('Uploading to ' + name + '...');
@@ -244,15 +242,11 @@ function _uploadTo(nameModule) {
 function uploadFromCloud() {
     Images.show.load('top');
     
-    CloudCmd.execFromModule('Cloud', 'saveFile', (currentName, data) => {
+    CloudCmd.execFromModule('Cloud', 'saveFile', async (currentName, data) => {
         const path = DOM.getCurrentDirPath() + currentName;
         
-        RESTful.write(path, data, (error) => {
-            if (error)
-                return;
-            
-            CloudCmd.refresh({currentName});
-        });
+        await RESTful.write(path, data);
+        await CloudCmd.refresh({currentName});
     });
 }
 

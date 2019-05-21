@@ -5,7 +5,10 @@
 const itype = require('itype/legacy');
 const exec = require('execon');
 const jonny = require('jonny/legacy');
+const tryToCatch = require('try-to-catch/legacy');
+
 const Util = require('../../common/util');
+const callbackify = require('../../common/callbackify');
 
 const Images = require('./images');
 const load = require('./load');
@@ -13,6 +16,8 @@ const Files = require('./files');
 const RESTful = require('./rest');
 const Storage = require('./storage');
 const Dialog = require('./dialog');
+
+const read = callbackify(RESTful.read);
 
 const currentFile = require('./current-file');
 const DOMTree = require('./dom-tree');
@@ -44,7 +49,6 @@ function CmdProto() {
     
     const Cmd = this;
     const SELECTED_FILE = 'selected-file';
-    const TITLE = 'Cloud Commander';
     const TabPanel = {
         'js-left'        : null,
         'js-right'       : null,
@@ -81,7 +85,7 @@ function CmdProto() {
         promptNew('file');
     };
     
-    function promptNew(typeName, type) {
+    async function promptNew(typeName, type) {
         const {Dialog} = DOM;
         const dir = DOM.getCurrentDirPath();
         const msg = 'New ' + typeName || 'File';
@@ -95,31 +99,24 @@ function CmdProto() {
         };
         
         const name = getName();
-        const cancel = false;
         
-        Dialog.prompt(TITLE, msg, name, {cancel}).then((name) => {
-            if (!name)
-                return;
+        const [, newName] = await tryToCatch(Dialog.prompt, msg, name);
+        
+        if (!newName)
+            return;
+        
+        const path = (type) => {
+            const result = dir + newName;
             
-            const path = (type) => {
-                const result = dir + name;
-                
-                if (!type)
-                    return result;
-                
-                return result + type;
-            };
+            if (!type)
+                return result;
             
-            RESTful.write(path(type), (error) => {
-                if (error)
-                    return;
-                
-                const currentName = name;
-                
-                CloudCmd.refresh({
-                    currentName,
-                });
-            });
+            return result + type;
+        };
+        
+        await RESTful.write(path(type));
+        await CloudCmd.refresh({
+            currentName: newName,
         });
     }
     
@@ -234,7 +231,7 @@ function CmdProto() {
      * get size
      * @currentFile
      */
-    this.loadCurrentSize = (callback, currentFile) => {
+    this.loadCurrentSize = callbackify(async (currentFile) => {
         const current = currentFile || DOM.getCurrentFile();
         const query = '?size';
         const link = DOM.getCurrentPath(current);
@@ -244,15 +241,13 @@ function CmdProto() {
         if (name === '..')
             return;
         
-        RESTful.read(link + query, (error, size) => {
-            if (error)
-                return;
-            
-            DOM.setCurrentSize(size, current);
-            exec(callback, current);
-            Images.hide();
-        });
-    };
+        const size = await RESTful.read(link + query);
+        
+        DOM.setCurrentSize(size, current);
+        Images.hide();
+        
+        return current;
+    });
     
     /**
      * load hash
@@ -264,7 +259,7 @@ function CmdProto() {
         const query = '?hash';
         const link = DOM.getCurrentPath(current);
         
-        RESTful.read(link + query, callback);
+        read(link + query, callback);
     };
     
     /**
@@ -277,7 +272,7 @@ function CmdProto() {
         const query = '?time';
         const link = DOM.getCurrentPath(current);
         
-        RESTful.read(link + query, callback);
+        read(link + query, callback);
     };
     
     /**
@@ -342,12 +337,12 @@ function CmdProto() {
         };
         
         if (Info.name === '..') {
-            Dialog.alert.noFiles(TITLE);
+            Dialog.alert.noFiles();
             return callback(Error('No files selected!'));
         }
         
         if (isDir)
-            return RESTful.read(path, func);
+            return read(path, func);
         
         DOM.checkStorageHash(path, (error, equal, hashNew) => {
             if (error)
@@ -357,7 +352,7 @@ function CmdProto() {
                 return DOM.getDataFromStorage(path, callback);
             
             hash = hashNew;
-            RESTful.read(path, func);
+            read(path, func);
         });
     };
     
@@ -368,9 +363,10 @@ function CmdProto() {
      * @currentFile
      */
     this.saveCurrentData = (url, data, callback, query = '') => {
-        DOM.RESTful.write(url + query, data, (error) => {
-            !error && DOM.saveDataToStorage(url, data);
-        });
+        RESTful.write(url + query, data)
+            .then(() => {
+                DOM.saveDataToStorage(url, data);
+            });
     };
     
     /**
@@ -541,7 +537,6 @@ function CmdProto() {
      */
     this.checkStorageHash = (name, callback) => {
         const {parallel} = exec;
-        const loadHash = DOM.loadCurrentHash;
         const nameHash = name + '-hash';
         const getStoreHash = exec.with(Storage.get, nameHash);
         
@@ -551,7 +546,7 @@ function CmdProto() {
         if (typeof callback !== 'function')
             throw Error('callback should be a function!');
         
-        parallel([loadHash, getStoreHash], (error, loadHash, storeHash) => {
+        parallel([DOM.loadCurrentHash, getStoreHash], (error, loadHash, storeHash) => {
             let equal;
             const isContain = /error/.test(loadHash);
             
@@ -747,7 +742,7 @@ function CmdProto() {
      *
      * @currentFile
      */
-    this.renameCurrent = (current) => {
+    this.renameCurrent = async (current) => {
         const {Dialog} = DOM;
         
         if (!DOM.isCurrentFile(current))
@@ -756,33 +751,31 @@ function CmdProto() {
         const from = DOM.getCurrentName(current);
         
         if (from === '..')
-            return Dialog.alert.noFiles(TITLE);
+            return Dialog.alert.noFiles();
         
-        const cancel = false;
+        const [e, to] = await tryToCatch(Dialog.prompt, 'Rename', from);
         
-        Dialog.prompt(TITLE, 'Rename', from, {cancel}).then((to) => {
-            const isExist = !!DOM.getCurrentByName(to);
-            const dirPath = DOM.getCurrentDirPath();
-            
-            if (from === to)
-                return;
-            
-            const files = {
-                from : dirPath + from,
-                to : dirPath + to,
-            };
-            
-            RESTful.mv(files, (error) => {
-                if (error)
-                    return;
-                
-                DOM.setCurrentName(to, current);
-                Storage.remove(dirPath);
-                
-                if (isExist)
-                    CloudCmd.refresh();
-            });
-        });
+        if (e)
+            return;
+        
+        const isExist = !!DOM.getCurrentByName(to);
+        const dirPath = DOM.getCurrentDirPath();
+        
+        if (from === to)
+            return;
+        
+        const files = {
+            from : dirPath + from,
+            to : dirPath + to,
+        };
+        
+        await RESTful.mv(files);
+        
+        DOM.setCurrentName(to, current);
+        Storage.remove(dirPath);
+        
+        if (isExist)
+            CloudCmd.refresh();
     };
     
     /**
@@ -872,7 +865,7 @@ function CmdProto() {
             path,
         });
         
-        Dialog.prompt(TITLE, msg, path, {cancel})
+        Dialog.prompt(msg, path, {cancel})
             .then(setPath)
             .then(CloudCmd.loadDir);
     },
@@ -941,7 +934,7 @@ function CmdProto() {
         const info = DOM.CurrentInfo;
         const current = currentFile || DOM.getCurrentFile();
         const files = current.parentElement;
-        const panel = files.parentElement;
+        const panel = files.parentElement || DOM.getPanel();
         
         const panelPassive = DOM.getPanel({
             active: false,

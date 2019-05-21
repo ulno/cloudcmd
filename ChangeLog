@@ -1,3 +1,72 @@
+2019.05.13, v12.2.0
+
+fix:
+- feature(npmignore) add fixture.json
+- (operation) set-listeners: alert: noCancel -> cancel
+- (cloudcmd) different title
+
+feature:
+- (key) add ability to rename file with Shift + F6
+- (user-menu) add (#221)
+- (package) clean-css-loader v2.0.0
+- (package) edward v11.0.0
+- (npmignore) add fixture.json
+- (package) dword v11.0.0
+- (package) smalltalk v3.4.0
+- (package) eslint v6.0.0-alpha
+- (package) eslint-plugin-node v9.0.1
+- (config) speed up load: series -> parallel
+- (cloudcmd) avoid service worker reoload scripts in dev mode
+- (package) putout v4.23.0
+- (package) nyc v14.0.0
+
+
+2019.04.15, v12.1.0
+
+fix:
+- (heroku) app: add "}" (#236)
+
+feature:
+- (edit-names) add bulk rename (#231)
+- (package) stylelint v10.0.0
+
+
+2019.04.04, v12.0.2
+
+fix:
+- (listeners) any touch open file (#235)
+
+
+2019.04.04, v12.0.1
+
+fix:
+- (listeners) unable to navigate into folders (#235)
+
+
+2019.04.01, v12.0.0
+
+fix:
+- feature(cloudcmd) split prefix and prefixSocket finally
+
+feature:
+- (cloudcmd) drop support of beautify, minify
+- (cloudcmd) improved progress of file operations
+- (cloudcmd) split prefix and prefixSocket finally
+- (cloudcmd) view file on double click or enter
+- (cloudcmd) add ability to change directory using F3
+
+
+2019.03.27, v11.8.6
+
+fix:
+- (operation) progress
+- (terminal) rm IntersectionObserver handling (xtermjs/xterm.js#1929)
+
+feature:
+- (package) opn -> open v6.0.0
+- (package) remove @babel/plugin-proposal-object-rest-spread
+
+
 2019.02.20, v11.8.5
 
 fix:

@@ -12,6 +12,7 @@ const exec = require('execon');
 const loadJS = require('load.js').js;
 
 const {encode} = require('../../../common/entity');
+const callbackify = require('../../../common/callbackify');
 
 const RESTful = require('../../dom/rest');
 const removeExtension = require('./remove-extension');
@@ -23,10 +24,7 @@ const removeQuery = (a) => a.replace(/\?.*/, '');
 const Name = 'Operation';
 CloudCmd[Name] = exports;
 
-const {
-    TITLE,
-    config,
-} = CloudCmd;
+const {config} = CloudCmd;
 const {Dialog, Images} = DOM;
 const initOperations = wraptile(_initOperations);
 const authCheck = wraptile(_authCheck);
@@ -35,15 +33,12 @@ const Operation = {};
 
 let Loaded;
 
-let {
-    cp: copyFn,
-    mv: moveFn,
-    delete: deleteFn,
-    extract: extractFn,
-} = RESTful;
-
-let packZipFn = RESTful.pack;
-let packTarFn = RESTful.pack;
+let copyFn = callbackify(RESTful.copy);
+let moveFn = callbackify(RESTful.mv);
+let deleteFn = callbackify(RESTful.delete);
+let extractFn = callbackify(RESTful.extract);
+let packZipFn = callbackify(RESTful.pack);
+let packTarFn = callbackify(RESTful.pack);
 
 const Info = DOM.CurrentInfo;
 const showLoad = Images.show.load.bind(null, 'top');
@@ -55,7 +50,7 @@ const noFilesCheck = () => {
     const is = Boolean(!length);
     
     if (is)
-        return Dialog.alert.noFiles(TITLE);
+        return Dialog.alert.noFiles();
     
     return is;
 };
@@ -69,7 +64,11 @@ module.exports.init = promisify((callback) => {
             if (!config('progress') || config('dropbox'))
                 return callback();
             
-            load(initOperations(CloudCmd.prefix, callback));
+            const {
+                prefix,
+                prefixSocket,
+            } = CloudCmd;
+            load(initOperations(prefix, prefixSocket, callback));
         },
         (callback) => {
             Loaded = true;
@@ -84,12 +83,12 @@ function _authCheck(spawn, ok) {
     const alertDialog = wraptile(Dialog.alert);
     
     spawn.on('accept', accept(spawn));
-    spawn.on('reject', alertDialog (TITLE, 'Wrong credentials!'));
+    spawn.on('reject', alertDialog ('Wrong credentials!'));
     spawn.emit('auth', config('username'), config('password'));
 }
 
-function _initOperations(socketPrefix, fn) {
-    const prefix = `${socketPrefix}/fileop`;
+function _initOperations(prefix, socketPrefix, fn) {
+    socketPrefix = `${socketPrefix}/fileop`;
     fileop({prefix, socketPrefix}, (e, operator) => {
         fn();
         
@@ -99,45 +98,97 @@ function _initOperations(socketPrefix, fn) {
 }
 
 function onConnect(operator) {
-    packTarFn = (data, callback) => {
-        operator.tar(data.from, data.to, data.names)
-            .then(setListeners({noContinue: true}, callback));
+    packTarFn = ({from, to, names}, callback) => {
+        const operation = 'Tar';
+        const listen = setListeners({
+            operation,
+            callback,
+            noContinue: true,
+            from,
+            to,
+        });
+        
+        operator.tar(from, to, names)
+            .then(listen);
     };
     
-    packZipFn = (data, callback) => {
-        operator.zip(data.from, data.to, data.names)
-            .then(setListeners({noContinue: true}, callback));
+    packZipFn = ({from, to, names}, callback) => {
+        const operation = 'Zip';
+        const listen = setListeners({
+            operation,
+            callback,
+            noContinue: true,
+            from,
+            to,
+        });
+        
+        operator.zip(from, to, names)
+            .then(listen);
     };
     
     deleteFn = (from, files, callback) => {
         from = removeQuery(from);
+        
+        const operation = 'Delete';
+        const listen = setListeners({
+            operation,
+            callback,
+            from,
+        });
+        
         operator.remove(from, files)
-            .then(setListeners(callback));
+            .then(listen);
     };
     
-    copyFn = (data, callback) => {
-        operator.copy(data.from, data.to, data.names)
-            .then(setListeners(callback));
+    copyFn = ({from, to, names}, callback) => {
+        const operation = 'Copy';
+        const listen = setListeners({
+            operation,
+            callback,
+            from,
+            to,
+            names,
+        });
+        
+        operator.copy(from, to, names)
+            .then(listen);
     };
     
-    moveFn = (data, callback) => {
-        operator.move(data.from, data.to, data.names)
-            .then(setListeners(callback));
+    moveFn = ({from, to, names}, callback) => {
+        const operation = 'Move';
+        const listen = setListeners({
+            operation,
+            callback,
+            from,
+            to,
+        });
+        
+        operator.move(from, to, names)
+            .then(listen);
     };
     
-    extractFn = (data, callback) => {
-        operator.extract(data.from, data.to)
-            .then(setListeners({noContinue: true}, callback));
+    extractFn = ({from, to}, callback) => {
+        const operation = 'Extract';
+        const listen = setListeners({
+            operation,
+            callback,
+            noContinue: true,
+            from,
+            to,
+        });
+        
+        operator.extract(from, to)
+            .then(listen);
     };
 }
 
 function onDisconnect() {
-    packZipFn = RESTful.pack;
-    packTarFn = RESTful.pack;
-    deleteFn = RESTful.delete;
-    copyFn = RESTful.cp;
-    moveFn = RESTful.mv;
-    extractFn = RESTful.extract;
+    packZipFn = callbackify(RESTful.pack);
+    packTarFn = callbackify(RESTful.pack);
+    deleteFn = callbackify(RESTful.delete);
+    copyFn = callbackify(RESTful.cp);
+    moveFn = callbackify(RESTful.mv);
+    extractFn = callbackify(RESTful.extract);
 }
 
 function getPacker(type) {
@@ -216,6 +267,7 @@ function promptDelete() {
     const n = names.length;
     
     let msg;
+    
     if (n) {
         let name = '';
         
@@ -241,7 +293,7 @@ function promptDelete() {
     
     const cancel = false;
     
-    Dialog.confirm(TITLE, msg, {cancel}).then(() => {
+    Dialog.confirm(msg, {cancel}).then(() => {
         deleteSilent(files);
     });
 }
@@ -265,15 +317,15 @@ function deleteSilent(files = DOM.getActiveFiles()) {
     const currentName = DOM.getCurrentName();
     const nextCurrentName = getNextCurrentName(currentName, names, removedNames);
     
-    deleteFn(path + query, removedNames, () => {
-        CloudCmd.refresh(() => {
-            const names = Info.files.map(DOM.getCurrentName);
-            const isCurrent = names.includes(currentName);
-            
-            const name = isCurrent ? currentName : nextCurrentName;
-            
-            DOM.setCurrentByName(name);
-        });
+    deleteFn(path + query, removedNames, async () => {
+        await CloudCmd.refresh();
+        
+        const names = Info.files.map(DOM.getCurrentName);
+        const isCurrent = names.includes(currentName);
+        
+        const name = isCurrent ? currentName : nextCurrentName;
+        
+        DOM.setCurrentByName(name);
     });
 }
 
@@ -343,7 +395,7 @@ function _processFiles(options, data) {
         const str = `"${ name }" already exist. Overwrite?`;
         const cancel = false;
         
-        Dialog.confirm(TITLE, str, {cancel}).then(go);
+        Dialog.confirm(str, {cancel}).then(go);
         
         function go() {
             showLoad();
@@ -389,8 +441,6 @@ function twopack(operation, type) {
     let fileFrom;
     let currentName = Info.name;
     
-    const {Images} = DOM;
-    
     const {
         path,
         dirPath,
@@ -402,7 +452,7 @@ function twopack(operation, type) {
     checkEmpty('operation', operation);
     
     if (!names.length)
-        return Dialog.alert.noFiles(TITLE);
+        return Dialog.alert.noFiles();
     
     switch(operation) {
     case 'extract':
@@ -433,7 +483,7 @@ function twopack(operation, type) {
         break;
     }
     
-    Images.show.load('top');
+    showLoad();
     
     op(fileFrom, (error) => {
         !error && CloudCmd.refresh({
@@ -457,7 +507,7 @@ function message(msg, to, names) {
     
     const cancel = false;
     
-    return Dialog.prompt(TITLE, msg, to, {cancel});
+    return Dialog.prompt(msg, to, {cancel});
 }
 
 function load(callback) {
@@ -466,7 +516,7 @@ function load(callback) {
     
     loadJS(file, (error) => {
         if (error) {
-            Dialog.alert(TITLE, error.message);
+            Dialog.alert(error.message);
             return exec(callback);
         }
         

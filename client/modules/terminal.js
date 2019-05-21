@@ -14,8 +14,6 @@ const Images = require('../dom/images');
 
 const loadParallel = promisify(load.parallel);
 
-const TITLE = 'Terminal';
-
 const {Dialog} = DOM;
 const {
     Key,
@@ -26,6 +24,7 @@ CloudCmd.Terminal = exports;
 
 let Loaded;
 let Terminal;
+let Socket;
 
 const loadAll = async () => {
     const {prefix} = CloudCmd;
@@ -38,20 +37,17 @@ const loadAll = async () => {
     
     if (e) {
         const src = e.target.src.replace(window.location.href, '');
-        return Dialog.alert(TITLE, `file ${src} could not be loaded`);
+        return Dialog.alert(`file ${src} could not be loaded`);
     }
     
     Loaded = true;
 };
-
-const {IntersectionObserver} = window;
 
 module.exports.init = async () => {
     if (!config('terminal'))
         return;
     
     Images.show.load('top');
-    delete window.IntersectionObserver;
     
     await CloudCmd.View();
     await loadAll();
@@ -92,11 +88,11 @@ function create() {
     delete window.IntersectionObserver;
 
     const {socket, terminal} = gritty(document.body, options);
-    window.IntersectionObserver = IntersectionObserver;
     
+    Socket = socket;
     Terminal = terminal;
     
-    terminal.on('key', (char, {keyCode, shiftKey}) => {
+    Terminal.on('key', (char, {keyCode, shiftKey}) => {
         if (shiftKey && keyCode === Key.ESC) {
             hide();
             CloudCmd.refresh();
@@ -105,17 +101,18 @@ function create() {
     
     socket.on('connect', exec.with(authCheck, socket));
     socket.on('exit', function() { hide(); CloudCmd.refresh(); });
+
 }
 
 function authCheck(spawn) {
     spawn.emit('auth', config('username'), config('password'));
     
     spawn.on('reject', () => {
-        Dialog.alert(TITLE, 'Wrong credentials!');
+        Dialog.alert('Wrong credentials!');
     });
 }
 
-function show(callback) {
+function show() {
     if (!Loaded)
         return;
     
@@ -126,10 +123,7 @@ function show(callback) {
     
     CloudCmd.View.show(Terminal.element, {
         afterShow: () => {
-            if (Terminal)
-                Terminal.focus();
-            
-            exec(callback);
+            Terminal.focus();
         },
     });
 }

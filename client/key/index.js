@@ -20,6 +20,7 @@ Chars([]);
 
 KeyProto.prototype = KEY;
 CloudCmd.Key = KeyProto;
+const {loadDir} = CloudCmd;
 
 function KeyProto() {
     let Binded;
@@ -93,7 +94,7 @@ function KeyProto() {
     }
     
     function getSymbol(shift, keyCode) {
-        switch (keyCode) {
+        switch(keyCode) {
         case KEY.DOT:
             return '.';
         
@@ -129,7 +130,6 @@ function KeyProto() {
         } = Info;
         
         const {Operation} = CloudCmd;
-        
         const {keyCode} = event;
         
         const alt = event.altKey;
@@ -143,7 +143,7 @@ function KeyProto() {
             next = current.nextSibling;
         }
         
-        switch (keyCode) {
+        switch(keyCode) {
         case Key.TAB:
             DOM.changePanel();
             event.preventDefault();
@@ -186,11 +186,16 @@ function KeyProto() {
             break;
         
         case Key.F2:
+            if (CloudCmd.config('userMenu'))
+                return CloudCmd.UserMenu.show();
+            
             DOM.renameCurrent(current);
             break;
         
         case Key.F3:
-            if (shift)
+            if (Info.isDir)
+                loadDir({path});
+            else if (shift)
                 CloudCmd.Markdown.show(path);
             else if (ctrlMeta)
                 CloudCmd.sortPanel('name');
@@ -223,6 +228,8 @@ function KeyProto() {
         case Key.F6:
             if (ctrlMeta)
                 CloudCmd.sortPanel('size');
+            else if (shift)
+                DOM.renameCurrent(current);
             else
                 Operation.show('move');
             
@@ -279,7 +286,7 @@ function KeyProto() {
             exec.if(isSelected, () => {
                 DOM.toggleSelectedFile(current);
             }, (callback) => {
-                DOM.loadCurrentSize(callback, current);
+                DOM.loadCurrentSize(current, callback);
             });
             
             event.preventDefault();
@@ -382,12 +389,11 @@ function KeyProto() {
             event.preventDefault();
             break;
         
-        /* open directory */
         case Key.ENTER:
             if (Info.isDir)
-                CloudCmd.loadDir({
-                    path: path === '/' ? '/' : path + '/',
-                });
+                loadDir({path});
+            else
+                CloudCmd.View.show();
             break;
         
         case Key.BACKSPACE:
@@ -397,7 +403,7 @@ function KeyProto() {
         
         case Key.BACKSLASH:
             if (ctrlMeta)
-                CloudCmd.loadDir({
+                loadDir({
                     path: '/',
                 });
             break;

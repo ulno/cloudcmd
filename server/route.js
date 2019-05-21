@@ -111,6 +111,7 @@ function indexProcessing(options) {
     const noConfig = !config('configDialog');
     const noConsole = !config('console');
     const noTerminal = !config('terminal');
+    const noUserMenu = !config('userMenu');
     const {panel} = options;
     
     let {data} = options;
@@ -139,6 +140,13 @@ function indexProcessing(options) {
         data = data
             .replace('icon-terminal', 'icon-terminal none');
     
+    if (noUserMenu)
+        data = data
+            .replace('icon-user-menu', 'icon-user-menu none');
+    else
+        data = data
+            .replace('icon-rename', 'icon-rename none');
+    
     const left = rendy(Template.panel, {
         side        : 'left',
         content     : panel,
@@ -146,6 +154,7 @@ function indexProcessing(options) {
     });
     
     let right = '';
+    
     if (!oneFilePanel)
         right = rendy(Template.panel, {
             side        : 'right',

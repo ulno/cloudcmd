@@ -1,40 +1,61 @@
 'use strict';
 
 /* global DOM */
-/* global CloudCmd */
 
 const {
-    Images,
     Dialog,
+    Images,
 } = DOM;
 
 const forEachKey = require('for-each-key/legacy');
-const {TITLE} = CloudCmd;
+const wraptile = require('wraptile/legacy');
 
-module.exports = (options, callback) => (emitter) => {
-    if (!callback) {
-        callback = options;
-        options = {};
-    }
+const format = require('./format');
+
+module.exports = (options) => (emitter) => {
+    const {
+        operation,
+        callback,
+        noContinue,
+        from,
+        to,
+    } = options;
     
     let done;
     let lastError;
     
+    const onAbort = wraptile(({emitter, operation}) => {
+        emitter.abort();
+        
+        const msg = `${operation} aborted`;
+        lastError = true;
+        
+        Dialog.alert(msg, {
+            cancel: false,
+        });
+    });
+    
     const removeListener = emitter.removeListener.bind(emitter);
     const on = emitter.on.bind(emitter);
+    
+    const message = format(operation, from, to);
+    const progress = Dialog.progress(message);
+    
+    progress.catch(onAbort({
+        emitter,
+        operation,
+    }));
     
     const listeners = {
         progress: (value) => {
             done = value === 100;
-            Images.setProgress(value);
+            progress.setProgress(value);
         },
         
         end: () => {
-            Images
-                .hide()
-                .clearProgress();
-            
+            Images.hide();
             forEachKey(removeListener, listeners);
+            progress.remove();
             
             if (lastError || done)
                 callback();
@@ -43,17 +64,19 @@ module.exports = (options, callback) => (emitter) => {
         error: (error) => {
             lastError = error;
             
-            if (options.noContinue) {
+            if (noContinue) {
                 listeners.end(error);
-                Dialog.alert(TITLE, error);
+                Dialog.alert(error);
+                progress.remove();
                 return;
             }
             
-            Dialog.confirm(TITLE, error + '\n Continue?')
+            Dialog.confirm(error + '\n Continue?')
                 .then(() => {
                     emitter.continue();
                 }, () => {
                     emitter.abort();
+                    progress.remove();
                 });
         },
     };

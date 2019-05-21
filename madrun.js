@@ -31,7 +31,7 @@ module.exports = {
     'lint': () => run(['putout', 'lint:*', 'spell']),
     'lint:server': () => `eslint -c .eslintrc.server ${dirs} --ignore-pattern *.spec.js`,
     'lint:test': () => `eslint --ignore-pattern '!.*' ${dirsTest}`,
-    'lint:client': () => 'eslint --env browser client',
+    'lint:client': () => 'eslint --env browser client --ignore-pattern .cloudcmd.menu.js',
     'lint:css': () => 'stylelint css/*.css',
     'spell': () => 'yaspeller .',
     'fix:lint': () => run(['putout', 'lint:*'], '--fix'),
@@ -69,7 +69,7 @@ module.exports = {
     'report': () => 'nyc report --reporter=text-lcov | coveralls',
     '6to5': () => 'webpack --progress',
     '6to5:client': () => run('6to5', '--mode production'),
-    '6to5:client:dev': () => `NODE_ENV=development ${run('6to5', '--progress --mode development')}`,
+    '6to5:client:dev': () => `NODE_ENV=development ${run('6to5', '--mode development')}`,
     'pre6to5:client': () => 'rimraf dist',
     'pre6to5:client:dev': () => 'rimraf dist-dev',
     'watch:client': () => run('6to5:client','--watch'),
@@ -86,6 +86,6 @@ module.exports = {
     'build:client': () => run('6to5:client'),
     'build:client:dev': () => run('6to5:client:dev'),
     'heroku-postbuild': () => run('6to5:client'),
-    'putout': () => 'putout bin client server common test',
+    'putout': () => 'putout bin client server common test .cloudcmd.menu.js',
 };
 

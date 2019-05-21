@@ -160,6 +160,7 @@ module.exports.buildFromJSON = (params) => {
     Path(path);
     
     fileTable += header + '<ul data-name="js-files" class="files">';
+    
     /* Если мы не в корне */
     if (path !== '/') {
         const dotDot = getDotDot(path);
@@ -243,7 +244,7 @@ function getSize(file) {
         type,
     } = file;
     
-    if (type === 'directory')
+    if (/^directory$/.test(type))
         return '&lt;dir&gt;';
     
     if (/link/.test(type))

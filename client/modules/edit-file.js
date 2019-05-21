@@ -19,10 +19,8 @@ const {
 const {config} = CloudCmd;
 
 let Menu;
-
-const TITLE = 'Edit';
-
 let MSG_CHANGED;
+
 const isLoading = fullstore();
 
 const ConfigView = {
@@ -112,7 +110,7 @@ function setListeners(editor) {
 function authCheck(spawn) {
     spawn.emit('auth', config('username'), config('password'));
     spawn.on('reject', () => {
-        Dialog.alert(TITLE, 'Wrong credentials!');
+        Dialog.alert('Wrong credentials!');
     });
 }
 
@@ -171,12 +169,6 @@ function getMenuData() {
         'Select All     Ctrl+A' : () => {
             editor.selectAll();
         },
-        'Beautify       Ctrl+B' : () => {
-            editor.beautify();
-        },
-        'Minify         Ctrl+M' : () => {
-            editor.minify();
-        },
         'Close          Esc'    : () => {
             hide();
         },
@@ -197,7 +189,7 @@ function isChanged() {
         return;
     
     const cancel = false;
-    Dialog.confirm(TITLE, MSG_CHANGED, {cancel})
+    Dialog.confirm(MSG_CHANGED, {cancel})
         .then(() => {
             editor.save();
         });

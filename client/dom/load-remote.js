@@ -20,7 +20,7 @@ module.exports = (name, options, callback = options) => {
     if (o.name && window[o.name])
         return callback();
     
-    Files.get('modules', (error, modules) => {
+    Files.get('modules').then((modules) => {
         const online = config('online') && navigator.onLine;
         const module = findObjByNameInArr(modules.remote, name);
         
@@ -29,6 +29,7 @@ module.exports = (name, options, callback = options) => {
         
         let remoteTmpls;
         let local;
+        
         if (isArray) {
             remoteTmpls = module.remote;
             local = module.local;

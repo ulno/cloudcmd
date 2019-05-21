@@ -73,6 +73,7 @@ const args = require('minimist')(argv.slice(2), {
         'import-listen',
         'log',
         'dropbox',
+        'user-menu',
     ],
     default: {
         server      : true,
@@ -111,6 +112,7 @@ const args = require('minimist')(argv.slice(2), {
         'one-file-panel': choose(env.bool('one_file_panel'), config('oneFilePanel')),
         'confirm-copy': choose(env.bool('confirm_copy'), config('confirmCopy')),
         'confirm-move': choose(env.bool('confirm_move'), config('confirmMove')),
+        'user-menu': choose(env.bool('user_menu'), config('userMenu')),
         'keys-panel': env.bool('keys_panel') || config('keysPanel'),
         'import-token': env('import_token') || config('importToken'),
         'export-token': env('export_token') || config('exportToken'),
@@ -163,8 +165,7 @@ function main() {
     config('terminalAutoRestart', args['terminal-auto-restart']);
     config('editor', args.editor);
     config('prefix', prefixer(args.prefix));
-    // MAJOR: remove condition on v12
-    config('prefixSocket', prefixer(args['prefix-socket']) || config('prefix'));
+    config('prefixSocket', prefixer(args['prefix-socket']));
     config('root', args.root || '/');
     config('vim', args.vim);
     config('columns', args.columns);
@@ -181,6 +182,7 @@ function main() {
     config('importToken', args['import-token']);
     config('importListen', args['import-listen']);
     config('importUrl', args['import-url']);
+    config('userMenu', args['user-menu']);
     
     config('dropbox', args['dropbox']);
     config('dropboxToken', args['dropbox-token'] || '');
@@ -192,7 +194,7 @@ function main() {
         editor: config('editor'),
         packer: config('packer'),
         prefix: config('prefix'),
-        prefixSocket: config('prefixSocket') || config('prefix'), // MAJOR: remove condition on v12
+        prefixSocket: config('prefixSocket'),
         columns: config('columns'),
     };
     

@@ -39,6 +39,36 @@ test('cloudcmd: route: buttons: no console', async (t) => {
     t.end();
 });
 
+test('cloudcmd: route: buttons: user menu: disabled', async (t) => {
+    const options = {
+        config: {
+            userMenu: false,
+        },
+    };
+    
+    const {body} = await request.get('/', {
+        options,
+    });
+    
+    t.ok(/icon-user-menu none/.test(body), 'should hide console');
+    t.end();
+});
+
+test('cloudcmd: route: buttons: user menu: enabled', async (t) => {
+    const options = {
+        config: {
+            userMenu: true,
+        },
+    };
+    
+    const {body} = await request.get('/', {
+        options,
+    });
+    
+    t.ok(/icon-rename none/.test(body), 'should hide console');
+    t.end();
+});
+
 test('cloudcmd: route: buttons: console', async (t) => {
     const config = {
         console: true,
@@ -264,6 +294,7 @@ test('cloudcmd: route: realpath: error', async (t) => {
         options,
     });
     
+    /*eslint require-atomic-updates:0*/
     fs.realpath = realpath;
     
     t.ok(/^ENOENT/.test(body), 'should return error');

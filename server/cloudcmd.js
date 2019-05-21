@@ -11,6 +11,7 @@ const cloudfunc = require(DIR_COMMON + 'cloudfunc');
 const authentication = require(DIR + 'auth');
 const config = require(DIR + 'config');
 const modulas = require(DIR + 'modulas');
+const userMenu = require(DIR + 'user-menu');
 const rest = require(DIR + 'rest');
 const route = require(DIR + 'route');
 const validate = require(DIR + 'validate');
@@ -71,7 +72,7 @@ module.exports = (params) => {
     config('configDialog', defaultValue('configDialog', options));
     
     const {prefix} = prefixer(options.prefix);
-    const prefixSocket = prefixer(options.prefixSocket) || prefix; // MAJOR: remove condition on v12
+    const prefixSocket = prefixer(options.prefixSocket);
     
     if (p.socket)
         listen(prefixSocket, p.socket);
@@ -221,6 +222,10 @@ function cloudcmd(prefix, plugins, modules) {
         restafary({
             prefix: cloudfunc.apiURL + '/fs',
             root,
+        }),
+        
+        userMenu({
+            menuName: '.cloudcmd.menu.js',
         }),
         
         rest,

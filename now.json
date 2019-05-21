@@ -1,4 +1,5 @@
 {
+    "version": 1,
     "type": "npm",
     "alias": "cloudcmd",
     "env": {
@@ -33,6 +34,7 @@
         "img",
         "man",
         "modules",
+        "madrun.js",
         ".webpack",
         "webpack.config.js",
         "cssnano.config.js",
